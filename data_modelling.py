@@ -5,9 +5,10 @@ import streamlit as st
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from keras.models import Sequential
-from keras.layers import Conv1D, MaxPooling1D, LSTM, Dense, Dropout
+from keras.layers import LSTM, Dropout, Dense
+from keras.regularizers import l2
 
-# Prepare data for CNN-LSTM
+# Prepare data for LSTM
 def prepare_data(df, time_step=30):
     # Ensure the 'Date' column is in datetime format
     df['Date'] = pd.to_datetime(df['Date'], errors='coerce')  # Coerce invalid dates to NaT
@@ -16,7 +17,6 @@ def prepare_data(df, time_step=30):
     if df['Date'].isna().any():
         st.warning("There are invalid dates in your data. These rows will be removed.")
         df = df.dropna(subset=['Date'])  # Remove rows with invalid dates
-
 
     df = df.sort_values('Date')  # Ensure data is sorted by date
     value_data = df[['Value']].values
@@ -32,22 +32,29 @@ def prepare_data(df, time_step=30):
         y.append(scaled_data[i, 0])
 
     X, y = np.array(X), np.array(y)
-    X = np.reshape(X, (X.shape[0], X.shape[1], 1))  # Reshape for CNN-LSTM
+    X = np.reshape(X, (X.shape[0], X.shape[1], 1))  # Reshape for LSTM
     return X, y, scaler
 
-# CNN-LSTM model for time series forecasting
-def create_cnn_lstm_model(input_shape, cnn_filters=32, lstm_units=15, dropout=0.5):
+# LSTM model for time series forecasting
+def create_improved_lstm_model(input_shape, units=15, dropout=0.4, l2_penalty=0.002):
     model = Sequential()
-    model.add(Conv1D(filters=cnn_filters, kernel_size=3, activation='relu', input_shape=input_shape))
-    model.add(MaxPooling1D(pool_size=2))
-    model.add(LSTM(units=lstm_units, return_sequences=False))
+
+    # Adding LSTM layer with L2 regularization
+    model.add(LSTM(units=units, input_shape=input_shape, kernel_regularizer=l2(l2_penalty), return_sequences=False))
+
+    # Dropout layer for regularization
     model.add(Dropout(dropout))
-    model.add(Dense(1))
+
+    # Adding Dense layer with L2 regularization for output prediction
+    model.add(Dense(1, kernel_regularizer=l2(l2_penalty)))
+
+    # Compile the model with Adam optimizer and mean squared error loss
     model.compile(optimizer='adam', loss='mean_squared_error')
+
     return model
 
-# Train and forecast with CNN-LSTM
-def train_and_forecast_cnn_lstm(df, time_step=30, forecast_end_date='2023-01-02'):
+# Train and forecast with LSTM
+def train_and_forecast_lstm(df, time_step=30, forecast_end_date='2023-01-02'):
     X, y, scaler = prepare_data(df, time_step)
 
     # Split data into training and testing sets
@@ -56,7 +63,7 @@ def train_and_forecast_cnn_lstm(df, time_step=30, forecast_end_date='2023-01-02'
     X_test, y_test = X[train_size:], y[train_size:]
 
     # Create and train the model
-    model = create_cnn_lstm_model((X.shape[1], 1))
+    model = create_improved_lstm_model((X.shape[1], 1))
     model.fit(X_train, y_train, epochs=14, batch_size=64, verbose=1)
 
     # Evaluate the model
@@ -91,7 +98,7 @@ def train_and_forecast_cnn_lstm(df, time_step=30, forecast_end_date='2023-01-02'
 
     return forecast_df, {"MAE": mae, "RMSE": rmse, "R-squared": r2}
 
-
+# Streamlit UI function
 def price_prediction(df):
     # Get unique crops
     crops = df['Item'].unique()
@@ -117,7 +124,7 @@ def price_prediction(df):
 
         for crop in selected_crops:
             crop_df = df[df['Item'] == crop]
-            forecast, performance = train_and_forecast_cnn_lstm(
+            forecast, performance = train_and_forecast_lstm(
                 crop_df, forecast_end_date=str(forecast_end_date)
             )
             forecast_results[crop] = forecast
