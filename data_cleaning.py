@@ -4,6 +4,7 @@ import numpy as np
 import streamlit as st
 from datetime import datetime
 import seaborn as sns
+from sklearn.preprocessing import MinMaxScaler
 
 # Define the function to detect outliers using IQR method
 def detect_outliers_iqr(data, column):
@@ -205,26 +206,28 @@ def data_cleaning_and_eda(df):
     
 
     # Dynamically extract crop options from the "Item" column
-    crop_options = ['All Crops'] + merged_df['Item'].unique().tolist()
+    crop_options = merged_df['Item'].unique().tolist()
 
-    # Crop selection slider
-    crop_selection = st.selectbox(
-        "Select a crop (or all crops)",
-        options=crop_options
+    # Allow users to select one or more crops
+    selected_crops = st.multiselect(
+        "Select one or more crops (leave empty to include all crops)",
+        options=crop_options,
+        default=crop_options  # Pre-select all crops by default
     )
+
+    # Filter data based on selected crops
+    if selected_crops:
+        df_filtered = merged_df[merged_df['Item'].isin(selected_crops)]
+    else:
+        df_filtered = merged_df  # If no crops are selected, use the entire dataset
 
     # Visualization type selection
     visualization_type = st.selectbox(
         "Select a type of visualization",
-        options=["Price Trends Across All Crops", "Yearly Price Trends", "Monthly Price Trends", 
-                 "Price Distribution by Year", "Correlation Between Crops", "Histogram of Prices"]
+        options=["Price Trends Across All Crops", "Yearly Average Price Trends", "Monthly Average Price Trends", 
+                 "Correlation Between Crops", "Histogram of Prices", "Heatmap of Monthly Average Prices",
+                 "Pie Chart of Total Prices", "Bar Chart of Monthly Totals"]
     )
-
-    # Filter data based on selected crop(s)
-    if crop_selection != "All Crops":
-        df_filtered = merged_df[merged_df['Item'] == crop_selection]
-    else:
-        df_filtered = merged_df
 
     # Generate visualizations based on selected type
     if visualization_type == "Price Trends Across All Crops":
@@ -245,35 +248,29 @@ def data_cleaning_and_eda(df):
         ax.grid()
         st.pyplot(fig)
 
-    elif visualization_type == "Yearly Price Trends":
-        st.write("### Yearly Price Trends for Each Crop")
+    elif visualization_type == "Yearly Average Price Trends":
+        st.write("### Yearly Average Price Trends for Each Crop")
         yearly_data = df_filtered.groupby(['Year', 'Item'])['Value'].mean().unstack()
         fig, ax = plt.subplots(figsize=(12, 6))
         yearly_data.plot(ax=ax)
-        ax.set_title("Yearly Price Trends")
+        ax.set_title("Yearly Average Price Trends")
         ax.set_xlabel("Year")
         ax.set_ylabel("Average Price (LCU/tonne)")
         st.pyplot(fig)
 
-    elif visualization_type == "Monthly Price Trends":
-        st.write("### Monthly Price Trends Across All Years")
-        months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+    elif visualization_type == "Monthly Average Price Trends":
+        st.write("### Monthly Average Price Trends Across All Years")
+        months = [
+            'January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'
+        ]
         monthly_data = df_filtered.groupby(['Months', 'Item'])['Value'].mean().unstack()
         monthly_data = monthly_data.loc[months]  # Ensure months are in correct order
         fig, ax = plt.subplots(figsize=(12, 6))
         monthly_data.plot(ax=ax)
-        ax.set_title("Monthly Price Trends Across All Years")
+        ax.set_title("Monthly Average Price Trends Across All Years")
         ax.set_xlabel("Month")
         ax.set_ylabel("Average Price (LCU/tonne)")
-        st.pyplot(fig)
-
-    elif visualization_type == "Price Distribution by Year":
-        st.write("### Price Distribution for Each Crop (By Year)")
-        fig, ax = plt.subplots(figsize=(12, 6))
-        df_filtered.boxplot(column='Value', by='Year', ax=ax, vert=False, patch_artist=True)
-        ax.set_title("Price Distribution by Year")
-        ax.set_xlabel("Price (LCU/tonne)")
-        ax.set_ylabel("Year")
         st.pyplot(fig)
 
     elif visualization_type == "Correlation Between Crops":
@@ -287,15 +284,80 @@ def data_cleaning_and_eda(df):
 
     elif visualization_type == "Histogram of Prices":
         st.write("### Histogram of Prices for Each Crop")
-        for crop in df_filtered['Item'].unique():
-            crop_data = df_filtered[df_filtered['Item'] == crop]
-            fig, ax = plt.subplots(figsize=(10, 6))
-            ax.hist(crop_data['Value'], bins=15, color='skyblue', edgecolor='black')
-            ax.set_title(f"Price Distribution for {crop}")
-            ax.set_xlabel("Price (LCU/tonne)")
-            ax.set_ylabel("Frequency")
-            st.pyplot(fig)
+        g = sns.FacetGrid(
+            data=df_filtered,
+            col="Item",
+            col_wrap=1,
+            height=6,
+            aspect=2,
+            sharex=False,
+            sharey=False
+        )
+        g.map(sns.histplot, "Value", kde=True, bins=20, color="blue")
+        g.set_titles("{col_name}")
+        g.set_axis_labels("Price (LCU/tonne)", "Frequency")
+        g.fig.suptitle("Distribution of Producer Prices by Item", y=1.02)
+        st.pyplot(g.fig)
 
+    elif visualization_type == "Heatmap of Monthly Average Prices":
+        st.write("### Heatmap of Monthly Average Producer Prices")
+        monthly_avg = df_filtered.groupby(['Year', 'Months'])['Value'].mean().reset_index()
+        monthly_avg_pivot = monthly_avg.pivot_table(index='Year', columns='Months', values='Value', aggfunc='mean')
+        scaler = MinMaxScaler()
+        monthly_avg_pivot_normalized = pd.DataFrame(
+            scaler.fit_transform(monthly_avg_pivot),
+            index=monthly_avg_pivot.index,
+            columns=monthly_avg_pivot.columns
+        )
+        month_order = [
+            'January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'
+        ]
+        monthly_avg_pivot_normalized = monthly_avg_pivot_normalized[month_order]
+        fig, ax = plt.subplots(figsize=(12, 6))
+        sns.heatmap(
+            monthly_avg_pivot_normalized,
+            annot=True,
+            fmt=".2f",
+            cmap='coolwarm',
+            cbar=True,
+            ax=ax
+        )
+        ax.set_title("Heatmap of Normalized Monthly Average Producer Prices")
+        ax.set_xlabel("Month")
+        ax.set_ylabel("Year")
+        st.pyplot(fig)
+
+    elif visualization_type == "Pie Chart of Total Prices":
+        st.write("### Proportion of Total Producer Prices by Item")
+        item_totals = df_filtered.groupby('Item')['Value'].sum()
+        colors = ['#ff9999', '#66b3ff', '#99ff99', '#ffcc99', '#c2c2f0', '#ffb3e6']
+        fig, ax = plt.subplots(figsize=(8, 8))
+        item_totals.plot.pie(
+            autopct='%1.1f%%',
+            startangle=90,
+            colors=colors[:len(item_totals)],
+            wedgeprops={'edgecolor': 'black'},
+            ax=ax
+        )
+        ax.set_title('Proportion of Total Producer Prices by Item')
+        ax.set_ylabel('')
+        st.pyplot(fig)
+
+    elif visualization_type == "Bar Chart of Monthly Totals":
+        st.write("### Monthly Total Producer Prices (All Items)")
+        monthly_totals_sum = df_filtered.groupby('Months')['Value'].sum()
+        month_order = [
+            'January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'
+        ]
+        monthly_totals_sum = monthly_totals_sum.reindex(month_order)
+        fig, ax = plt.subplots(figsize=(12, 6))
+        monthly_totals_sum.plot(kind='bar', ax=ax, color='darkblue', edgecolor='black')
+        ax.set_title('Monthly Total Producer Prices (All Items)')
+        ax.set_xlabel('Month')
+        ax.set_ylabel('Total Price (LCU/tonne)')
+        st.pyplot(fig)
 
 
 
