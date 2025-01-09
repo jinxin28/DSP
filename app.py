@@ -28,11 +28,13 @@ price_prediction_image = "https://storage.googleapis.com/kaggle-datasets-images/
 
 # Display the appropriate image based on the current page
 if st.session_state.page == "Overview":
-    st.image(overview_image, caption="Overview Page Image", use_container_width=True)
-elif st.session_state.page == "Data Cleaning & EDA":
-    st.image(data_cleaning_image, caption="Data Cleaning & EDA Page Image", use_container_width=True)
+    st.image(overview_image, use_container_width=True)
+elif st.session_state.page == "Template":
+    st.image(overview_image, use_container_width=True)
+elif st.session_state.page == "Data Cleaning & Visualisation":
+    st.image(data_cleaning_image, use_container_width=True)
 elif st.session_state.page == "Price Prediction":
-    st.image(price_prediction_image, caption="Price Prediction Page Image", use_container_width=True)
+    st.image(price_prediction_image, use_container_width=True)
 
 # Sidebar for navigation
 with st.sidebar:
@@ -51,8 +53,8 @@ with st.sidebar:
     st.session_state.uploaded_file = st.file_uploader("Upload CSV file", type=["csv"])
 
     # Data Cleaning & EDA button
-    if st.button("Data Cleaning & EDA"):
-        st.session_state.page = "Data Cleaning & EDA"
+    if st.button("Data Cleaning & Visualisation"):
+        st.session_state.page = "Data Cleaning & Visualisation"
 
     # Price Prediction button
     if st.button("Price Prediction"):
@@ -67,7 +69,7 @@ elif st.session_state.page == "Template":
     st.write("### Template")
     template.display_template()
 
-elif st.session_state.page == "Data Cleaning & EDA":
+elif st.session_state.page == "Data Cleaning & Visualisation":
     if st.session_state.uploaded_file is not None:
         df = pd.read_csv(st.session_state.uploaded_file)
         
