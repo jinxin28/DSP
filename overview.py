@@ -1,4 +1,3 @@
-# overview.py
 import streamlit as st
 
 def display_overview():
@@ -22,13 +21,15 @@ def display_overview():
     
     st.write(
         """
-        1. **Upload Your CSV File:** Start by uploading your crop price data in CSV format. You can easily do this by clicking the 'Proceed to upload CSV' button in the sidebar.
+        1. **Start by Visiting the Template Page:** Before uploading your data, visit the **Template** page from the sidebar. This page provides a sample template and explains the required format for your CSV file.
         
-        2. **Clean and Explore Your Data:** Once your data is uploaded, click the 'Data Cleaning & EDA' button. Here, we clean and prepare the data by removing any errors or missing information that could affect the time series predictions.
+        2. **Upload Your CSV File:** After understanding the required format, upload your crop price data in CSV format by clicking the 'Proceed to upload CSV' button in the sidebar.
         
-        3. **Predict Future Prices with Time Series:** After the data is cleaned, click the 'Price Prediction' section. Using time series analysis, we will predict future crop prices based on historical data trends. This will help you plan for the next season's crops and sales.
+        3. **Clean and Explore Your Data:** Once your data is uploaded, click the 'Data Cleaning & EDA' button. Here, we clean and prepare the data by removing any errors or missing information that could affect the time series predictions.
         
-        4. **Analyze Results:** Once the predictions are ready, you can view graphs and forecasts that will guide your decisions in planting and selling crops.
+        4. **Predict Future Prices with Time Series:** After the data is cleaned, click the 'Price Prediction' section. Using time series analysis, we will predict future crop prices based on historical data trends. This will help you plan for the next season's crops and sales.
+        
+        5. **Analyze Results:** Once the predictions are ready, you can view graphs and forecasts that will guide your decisions in planting and selling crops.
         """
     )
 
