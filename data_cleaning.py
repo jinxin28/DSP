@@ -33,6 +33,8 @@ def data_cleaning_and_eda(df):
 
     cleaned_crops = []
 
+
+    
     # Visualize outliers and remove them for each crop
     for crop_name, crop_data in crop_groups:
         # Visualize boxplot for each crop
@@ -105,14 +107,6 @@ def data_cleaning_and_eda(df):
     missing_summary = merged_df[merged_df["Missing"]].groupby("Year")["Months"].count()
     #st.write(missing_summary)
 
-    # Fill missing metadata for each item
-    default_values = {
-        "Domain": "Producer Prices",
-        "Area": "Malaysia",
-        "Element": "Producer Price (LCU/tonne)"
-    }
-    for column, default in default_values.items():
-        merged_df[column].fillna(default, inplace=True)
 
     # Interpolate missing 'Value' for each item (including the last year)
     merged_df["Value"] = (
@@ -177,9 +171,6 @@ def data_cleaning_and_eda(df):
     # Forward fill for 'Year', 'Months', 'Domain', 'Area', and 'Element'
     df_expanded['Year'] = df_expanded['Year'].fillna(method='ffill')
     df_expanded['Months'] = df_expanded['Months'].fillna(method='ffill')
-    df_expanded['Domain'] = df_expanded['Domain'].fillna(method='ffill')
-    df_expanded['Area'] = df_expanded['Area'].fillna(method='ffill')
-    df_expanded['Element'] = df_expanded['Element'].fillna(method='ffill')
 
     # Final cleaning steps
     df_expanded.drop_duplicates(inplace=True)
@@ -359,6 +350,13 @@ def data_cleaning_and_eda(df):
         ax.set_ylabel('Total Price (LCU/tonne)')
         st.pyplot(fig)
 
+    # Check if at least one of the columns exists
+    columns_to_remove = ["Domain", "Area", "Element"]
+    existing_columns = [col for col in columns_to_remove if col in df.columns]
+
+    # If any of the columns exist, drop them
+    if existing_columns:
+        merged_df = merged_df.drop(columns=existing_columns)
 
 
 
