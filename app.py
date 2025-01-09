@@ -3,6 +3,7 @@ import pandas as pd
 from data_cleaning import data_cleaning_and_eda
 from data_modelling import price_prediction
 import overview  # Import the overview.py module
+import template  # Import the template.py module
 
 # Set page configuration for the Streamlit app
 st.set_page_config(
@@ -27,11 +28,11 @@ price_prediction_image = "https://storage.googleapis.com/kaggle-datasets-images/
 
 # Display the appropriate image based on the current page
 if st.session_state.page == "Overview":
-    st.image(overview_image, caption="Overview Page Image", use_container_width=True)
+    st.image(overview_image, caption="Overview Page Image", use_column_width=True)
 elif st.session_state.page == "Data Cleaning & EDA":
-    st.image(data_cleaning_image, caption="Data Cleaning & EDA Page Image", use_container_width=True)
+    st.image(data_cleaning_image, caption="Data Cleaning & EDA Page Image", use_column_width=True)
 elif st.session_state.page == "Price Prediction":
-    st.image(price_prediction_image, caption="Price Prediction Page Image", use_container_width=True)
+    st.image(price_prediction_image, caption="Price Prediction Page Image", use_column_width=True)
 
 # Sidebar for navigation
 with st.sidebar:
@@ -40,6 +41,10 @@ with st.sidebar:
     # Overview button
     if st.button("Overview"):
         st.session_state.page = "Overview"
+
+    # Template button
+    if st.button("Template"):
+        st.session_state.page = "Template"
 
     # Upload CSV file button - Always Displayed
     st.write("### Upload Your CSV File")
@@ -57,6 +62,10 @@ with st.sidebar:
 if st.session_state.page == "Overview":
     st.write("### Overview")
     overview.display_overview()
+
+elif st.session_state.page == "Template":
+    st.write("### Template")
+    template.display_template()
 
 elif st.session_state.page == "Data Cleaning & EDA":
     if st.session_state.uploaded_file is not None:
