@@ -35,9 +35,6 @@ def display_template():
         st.write("#### Explanation of the Template")
         st.markdown(
             """
-            - **Domain**: The data domain (e.g., Producer Prices).
-            - **Area**: The geographical location (e.g., Malaysia).
-            - **Element**: The data element being recorded (e.g., Producer Price in LCU/tonne).
             - **Item**: The crop/item (e.g., Papayas).
             - **Year**: The year the data corresponds to.
             - **Months**: The month the data corresponds to.
