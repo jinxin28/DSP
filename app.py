@@ -9,7 +9,7 @@ import template  # Import the template.py module
 st.set_page_config(
     page_title="Crop Data Analysis Dashboard",  # Title for the browser tab
     page_icon="🌱",  # An emoji icon to display in the browser tab
-    layout="wide",  # Layout choice: centered or wide
+    layout="centered",  # Layout choice: centered or wide
     initial_sidebar_state="expanded"  # Sidebar state when the app is first loaded
 )
 
@@ -28,11 +28,11 @@ price_prediction_image = "https://storage.googleapis.com/kaggle-datasets-images/
 
 # Display the appropriate image based on the current page
 if st.session_state.page == "Overview":
-    st.image(overview_image, caption="Overview Page Image", use_column_width=True)
+    st.image(overview_image, caption="Overview Page Image", use_container_width=True)
 elif st.session_state.page == "Data Cleaning & EDA":
-    st.image(data_cleaning_image, caption="Data Cleaning & EDA Page Image", use_column_width=True)
+    st.image(data_cleaning_image, caption="Data Cleaning & EDA Page Image", use_container_width=True)
 elif st.session_state.page == "Price Prediction":
-    st.image(price_prediction_image, caption="Price Prediction Page Image", use_column_width=True)
+    st.image(price_prediction_image, caption="Price Prediction Page Image", use_container_width=True)
 
 # Sidebar for navigation
 with st.sidebar:
