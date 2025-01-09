@@ -1,8 +1,10 @@
 streamlit
 pandas
+requests
 matplotlib
 numpy<2.0
 seaborn
 scikit-learn
 keras
 tensorflow==2.13.0
+
