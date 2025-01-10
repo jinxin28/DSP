@@ -2,7 +2,7 @@ import streamlit as st
 
 def display_overview():
     # Heading
-    st.write("### Welcome to the Crop Price Dashboard for Malaysian Farmers")
+    st.write("### Welcome to the Crop Price App for Malaysian Farmers")
     
     # Introduction to crop prices and their importance
     st.write(
@@ -17,7 +17,7 @@ def display_overview():
     st.image("https://www.world-grain.com/ext/resources/2023/12/05/wheat-markets-prices_cr-BILLIONPHOTOS.COM--STOCK.ADOBE.COM_e.jpg?height=635&t=1703252509&width=1200", width=400)  # Replace with an actual URL
 
     # Step-by-step guide to using the platform
-    st.write("### How to Use This Dashboard: A Simple Guide for Farmers")
+    st.write("### How to Use This App: A Simple Guide for Farmers")
     
     st.write(
         """
