@@ -7,15 +7,15 @@ import template  # Import the template.py module
 
 # Set page configuration for the Streamlit app
 st.set_page_config(
-    page_title="Crop Data Analysis Dashboard",  # Title for the browser tab
+    page_title="Crop Data Analysis App",  # Title for the browser tab
     page_icon="🌱",  # An emoji icon to display in the browser tab
     layout="centered",  # Layout choice: centered or wide
     initial_sidebar_state="expanded"  # Sidebar state when the app is first loaded
 )
 
 # Now you can proceed with the rest of your Streamlit code
-st.title("Crop Data Analysis Dashboard")
-st.write("Welcome to the Crop Data Dashboard. Here you can explore and predict crop prices in Malaysia.")
+st.title("Crop Data Analysis App")
+st.write("Welcome to the Crop Data App. Here you can explore and predict crop prices in Malaysia.")
 
 # Initialize session state for navigation and file upload
 if "page" not in st.session_state:
