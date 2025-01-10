@@ -240,22 +240,14 @@ def data_cleaning_and_eda(df):
         st.pyplot(fig)
 
     elif visualization_type == "Yearly Average Price Trends":
-    st.write("### Yearly Average Price Trends for Each Crop")
-    
-    # Group by 'Year' and 'Item' and calculate the mean price for each year-item combination
-    yearly_avg = df_filtered.groupby(['Year', 'Item'])['Value'].mean().reset_index()
-
-    # Plot the line chart for yearly averages
-    plt.figure(figsize=(12, 6))
-    sns.lineplot(data=yearly_avg, x='Year', y='Value', hue='Item', errorbar=None)
-    plt.title('Yearly Average Producer Prices')
-    plt.xlabel('Year')
-    plt.ylabel('Average Price (LCU/tonne)')
-    plt.legend(title='Crop')
-    plt.grid(True)
-
-    # Display the plot in Streamlit
-    st.pyplot(plt)
+        st.write("### Yearly Average Price Trends for Each Crop")
+        yearly_data = df_filtered.groupby(['Year', 'Item'])['Value'].mean().unstack()
+        fig, ax = plt.subplots(figsize=(12, 6))
+        yearly_data.plot(ax=ax)
+        ax.set_title("Yearly Average Price Trends")
+        ax.set_xlabel("Year")
+        ax.set_ylabel("Average Price (LCU/tonne)")
+        st.pyplot(fig)
 
     elif visualization_type == "Monthly Average Price Trends":
         st.write("### Monthly Average Price Trends Across All Years")
