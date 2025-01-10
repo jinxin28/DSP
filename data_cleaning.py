@@ -24,58 +24,26 @@ def create_date(row):
 
 # File upload handling within Streamlit
 def data_cleaning_and_eda(df):
-    # Display Data Preview
-    #st.write("### Data Preview")
-    #st.write(df.head())
-
     # Group data by Item (Papayas, Pineapples, Watermelons)
     crop_groups = df.groupby('Item')
 
     cleaned_crops = []
 
-
-    
     # Visualize outliers and remove them for each crop
     for crop_name, crop_data in crop_groups:
-        # Visualize boxplot for each crop
-        #st.write(f"### Boxplot for {crop_name} (Outliers Detection)")
-        #fig, ax = plt.subplots(figsize=(10, 6))
-        #ax.boxplot(crop_data['Value'].dropna(), vert=False)
-        #ax.set_title(f'Boxplot for {crop_name} (Outliers Detection)')
-        #ax.set_xlabel('Value (LCU/tonne)')
-        #st.pyplot(fig)
-
         # Detect outliers using IQR method and add an 'Outlier' column to the crop_data
         crop_data['Outlier'] = detect_outliers_iqr(crop_data, 'Value')
-
-        # Display rows with outliers for each crop
-        #outliers_df = crop_data[crop_data['Outlier'] == True]
-        #st.write(f"Outliers detected for {crop_name}:")
-        #st.write(outliers_df)
 
         # Remove outliers from the dataset
         crop_data_cleaned = crop_data[~crop_data['Outlier']]
 
-       
         # Append cleaned data to the list
         cleaned_crops.append(crop_data_cleaned)
-
-
-        # Visualize the cleaned data for each crop
-        #st.write(f"### Boxplot for {crop_name} (After Removing Outliers)")
-        #fig, ax = plt.subplots(figsize=(10, 6))
-        #ax.boxplot(crop_data_cleaned['Value'].dropna(), vert=False)
-        #ax.set_title(f'Boxplot for {crop_name} (After Removing Outliers)')
-        #ax.set_xlabel('Value (LCU/tonne)')
-        #st.pyplot(fig)
 
     # Combine the cleaned crop datasets back into one DataFrame
     df_cleaned = pd.concat(cleaned_crops).sort_values(
         by=["Item", "Year", "Months"]
     ).reset_index(drop=True)
-
-    #st.write("### Cleaned Data (After Removing Outliers):")
-    #st.write(df_cleaned.head())
 
     # Drop 'Outlier' column
     df = df_cleaned.drop(columns=['Outlier'])
@@ -102,54 +70,60 @@ def data_cleaning_and_eda(df):
         on=["Year", "Months", "Item"]
     )
 
-    # Add Missing column and count missing months by year
-    merged_df["Missing"] = merged_df["Value"].isnull()
-    missing_summary = merged_df[merged_df["Missing"]].groupby("Year")["Months"].count()
-    #st.write(missing_summary)
-
-
     # Interpolate missing 'Value' for each item (including the last year)
     merged_df["Value"] = (
         merged_df.groupby("Item")["Value"]
         .transform(lambda x: x.interpolate())
     )
 
-    # Create a Date column and handle missing values
+    # Sort for clarity
+    merged_df = merged_df.sort_values(by=["Item", "Year", "Months"]).reset_index(drop=True)
+
+    # Apply the function to create the Date column
     merged_df['Date'] = merged_df.apply(create_date, axis=1)
+
+    # Drop rows where the date conversion failed
     merged_df = merged_df.dropna(subset=['Date'])
 
-    # Output the cleaned DataFrame
-    #st.write("### Cleaned Data with Date and Interpolation:")
-    #st.write(merged_df)
-
-    # Check for missing values
-    #st.write("### Missing Values:")
-    #st.write(merged_df.isnull().sum())
-
-    # Remove duplicate and null rows
-    merged_df = merged_df.drop_duplicates()
-    merged_df = merged_df.dropna()
-
-    # Sort for clarity
-    months_order = {month: i for i, month in enumerate(months, start=1)}
-    merged_df["Month_Order"] = merged_df["Months"].map(months_order)
-    merged_df.sort_values(by=["Item", "Year", "Month_Order"], inplace=True)
-
-    # Drop the temporary 'Month_Order' column after sorting
-    merged_df.drop(columns=["Month_Order"], inplace=True)
-    merged_df.reset_index(drop=True, inplace=True)
-
-    # Drop the mising values column
-    merged_df.drop(columns=['Missing'], inplace=True)
 
     # Validate data types
     #st.write("### Data Types:")
     #st.write(merged_df.dtypes)
 
-     # Create a full daily date range for each crop, adding 30 days beyond the max date
+    # Create a function to process each crop's data
+    def process_crop_data_daily(df_crop):
+        # Ensure 'Date' is in datetime format
+        df_crop['Date'] = pd.to_datetime(df_crop['Date'])
+
+        # Create a daily date range for this crop
+        daily_date_range = pd.date_range(
+            start=df_crop['Date'].min(),
+            end=df_crop['Date'].max() + pd.Timedelta(days=30),  # Extend by 30 days
+            freq='D'
+        )
+
+        # Set 'Date' as the index for reindexing
+        df_crop.set_index('Date', inplace=True)
+
+        # Reindex to include all dates in the range
+        df_crop_daily = df_crop.reindex(daily_date_range, fill_value=np.nan)
+
+        # Perform linear interpolation for 'Value'
+        df_crop_daily['Value'] = df_crop_daily['Value'].interpolate(method='linear')
+
+        # Round 'Value' to 2 decimal places
+        df_crop_daily['Value'] = df_crop_daily['Value'].round(2)
+
+        # Reset the index to restore 'Date' as a column
+        df_crop_daily.reset_index(inplace=True)
+        df_crop_daily.rename(columns={'index': 'Date'}, inplace=True)
+
+        return df_crop_daily
+
+    # Create a full daily date range for each crop, adding 30 days beyond the max date
     full_date_range = pd.DataFrame({
         'Date': pd.date_range(start=merged_df['Date'].min(), 
-                              end=merged_df['Date'].max() + pd.Timedelta(days=30))
+                            end=merged_df['Date'].max() + pd.Timedelta(days=30))
     })
 
     expanded_data = []
@@ -166,7 +140,7 @@ def data_cleaning_and_eda(df):
     df_expanded['Value'] = df_expanded.groupby('Item')['Value'].transform(lambda x: x.interpolate())
 
     # Round the 'Value' column to 2 decimal places
-    df_expanded['Value'] = df_expanded['Value'].apply(lambda x: f"{x:.2f}")
+    df_expanded['Value'] = df_expanded['Value'].apply(lambda x: round(x, 2))
 
     # Forward fill for 'Year', 'Months', 'Domain', 'Area', and 'Element'
     df_expanded['Year'] = df_expanded['Year'].fillna(method='ffill')
@@ -183,16 +157,6 @@ def data_cleaning_and_eda(df):
     df_expanded.reset_index(drop=True, inplace=True)
 
     merged_df = df_expanded
-    # Ensure 'Value' is numeric
-    merged_df['Value'] = pd.to_numeric(merged_df['Value'], errors='coerce')
-
-    # Pivot data to analyze trends across crops
-    pivot_data = merged_df.pivot_table(
-        index='Date',
-        columns='Item',
-        values='Value',
-        aggfunc='mean'
-    )
 
     
 
@@ -211,6 +175,9 @@ def data_cleaning_and_eda(df):
         df_filtered = merged_df[merged_df['Item'].isin(selected_crops)]
     else:
         df_filtered = merged_df  # If no crops are selected, use the entire dataset
+    
+
+
 
     # Visualization type selection
     visualization_type = st.selectbox(
@@ -241,21 +208,13 @@ def data_cleaning_and_eda(df):
 
     elif visualization_type == "Yearly Average Price Trends":
         st.write("### Yearly Average Price Trends for Each Crop")
-        
-        # Group by 'Year' and 'Item' and calculate the mean price for each year-item combination
-        yearly_avg = df_filtered.groupby(['Year', 'Item'])['Value'].mean().reset_index()
-    
-        # Plot the line chart for yearly averages
-        plt.figure(figsize=(12, 6))
-        sns.lineplot(data=yearly_avg, x='Year', y='Value', hue='Item', errorbar=None)
-        plt.title('Yearly Average Producer Prices')
-        plt.xlabel('Year')
-        plt.ylabel('Average Price (LCU/tonne)')
-        plt.legend(title='Crop')
-        plt.grid(True)
-    
-        # Display the plot in Streamlit
-        st.pyplot(plt)
+        yearly_data = df_filtered.groupby(['Year', 'Item'])['Value'].mean().unstack()
+        fig, ax = plt.subplots(figsize=(12, 6))
+        yearly_data.plot(ax=ax)
+        ax.set_title("Yearly Average Price Trends")
+        ax.set_xlabel("Year")
+        ax.set_ylabel("Average Price (LCU/tonne)")
+        st.pyplot(fig)
 
     elif visualization_type == "Monthly Average Price Trends":
         st.write("### Monthly Average Price Trends Across All Years")
